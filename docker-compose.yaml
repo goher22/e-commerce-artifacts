@@ -1,0 +1,94 @@
+version: "3"
+services:
+  mic-e-commerce-eureka-services:
+    build:
+      context: ./microservice/mic-e-commerce-eureka-services
+      dockerfile: Dockerfile
+    container_name: mic-e-commerce-eureka-services
+    ports:
+      - "8761:8761"
+    networks:
+      - red_e_commerce
+  mic-e-commerce-api-gateway:
+    build:
+      context: ./microservice/mic-e-commerce-api-gateway
+      dockerfile: Dockerfile
+    container_name: mic-e-commerce-api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - red_e_commerce
+    depends_on:
+      - mic-e-commerce-eureka-services
+  db_ecommerce:
+      image: mysql:8.0.33
+      restart: always
+      container_name: db_ecommerce
+      environment:
+        MYSQL_ROOT_PASSWORD: root
+      ports:
+          - "3307:3306"
+      volumes:
+          - ./database/auth/script.sql:/docker-entrypoint-initdb.d/script.sql
+          - mysql_data:/data/db
+      networks:
+        - red_e_commerce
+      healthcheck:
+        test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost']
+        timeout: 10s
+        retries: 10
+  mic-e-commerce-auth:
+    build:
+      context: ./microservice/mic-e-commerce-auth
+      dockerfile: Dockerfile
+    container_name: mic-e-commerce-auth
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_URL=jdbc:mysql://db_ecommerce:3306/auth_db
+      - DB_USER_NAME=root
+      - DB_PASSWORD=root
+    networks:
+      - red_e_commerce
+    depends_on:
+      - mic-e-commerce-eureka-services
+      - db_ecommerce
+  mic-e-commerce-product:
+    build:
+      context: ./microservice/mic-e-commerce-product
+      dockerfile: Dockerfile
+    container_name: mic-e-commerce-product
+    restart: always
+    ports:
+      - "8001:8000"
+    environment:
+      - DB_URL=jdbc:mysql://db_ecommerce:3306/product_db
+      - DB_USER_NAME=root
+      - DB_PASSWORD=root
+    networks:
+      - red_e_commerce
+    depends_on:
+      - mic-e-commerce-eureka-services
+      - db_ecommerce
+  mic-e-commerce-order:
+    build:
+      context: ./microservice/mic-e-commerce-order
+      dockerfile: Dockerfile
+    container_name: mic-e-commerce-order
+    restart: always
+    ports:
+      - "8002:8000"
+    environment:
+      - DB_URL=jdbc:mysql://db_ecommerce:3306/order_db
+      - DB_USER_NAME=root
+      - DB_PASSWORD=root
+    networks:
+      - red_e_commerce
+    depends_on:
+      - mic-e-commerce-eureka-services
+      - db_ecommerce
+networks:
+  red_e_commerce:
+volumes:
+    mysql_data:
