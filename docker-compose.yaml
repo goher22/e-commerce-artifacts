@@ -88,6 +88,24 @@ services:
     depends_on:
       - mic-e-commerce-eureka-services
       - db_ecommerce
+  web-ecommerce:
+    container_name: ecommerce
+    build:
+      context: ./app-web
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    networks:
+      - red_e_commerce
+    volumes:
+      - ./dist:/usr/share/nginx/html/dist
+    depends_on:
+      - mic-e-commerce-eureka-services
+      - mic-e-commerce-api-gateway
+      - mic-e-commerce-auth
+      - mic-e-commerce-product
+      - mic-e-commerce-order
+      - db_ecommerce
 networks:
   red_e_commerce:
 volumes:
